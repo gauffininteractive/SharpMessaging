@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{605EDDEB-E151-4826-9134-005B0FCCAB57}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>SharpMessaging</RootNamespace>
+    <AssemblyName>SharpMessaging</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="fastjson">
+      <HintPath>..\packages\fastJSON.2.1.5.0\lib\net40\fastjson.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Connection\BufferManager.cs" />
+    <Compile Include="Connection\ByteBufferWriter.cs" />
+    <Compile Include="Connection\CircularQueueList.cs" />
+    <Compile Include="Connection\DisconnectedEventArgs.cs" />
+    <Compile Include="Connection\FaultExceptionEventArgs.cs" />
+    <Compile Include="Connection\HandshakeFrameReceivedEventArgs.cs" />
+    <Compile Include="Connection\ServerState.cs" />
+    <Compile Include="Extensions\Ack\IAckReceiver.cs" />
+    <Compile Include="Extensions\Ack\IAckSender.cs" />
+    <Compile Include="Extensions\Ack\SingleAckSender.cs" />
+    <Compile Include="Extensions\Payload\DotNet\DotNetTypeExtension.cs" />
+    <Compile Include="Frames\ErrorFrame.cs" />
+    <Compile Include="Extensions\Ack\AckException.cs" />
+    <Compile Include="Extensions\Ack\BatchAckReceiver.cs" />
+    <Compile Include="Extensions\Ack\BatchAckExtension.cs" />
+    <Compile Include="Extensions\Ack\BatchAckSender.cs" />
+    <Compile Include="Extensions\Payload\DotNet\DotNetType.cs" />
+    <Compile Include="Extensions\ExtensionFrame.cs" />
+    <Compile Include="Frames\Extensions\ExtensionNameComparer.cs" />
+    <Compile Include="Frames\Extensions\ExtensionService.cs" />
+    <Compile Include="Extensions\Ack\SingleAckExtension.cs" />
+    <Compile Include="Extensions\ExtensionRegistry.cs" />
+    <Compile Include="Extensions\Ack\IAckExtension.cs" />
+    <Compile Include="Extensions\IExtensionRegistry.cs" />
+    <Compile Include="Extensions\Ack\SingleAckReceiver.cs" />
+    <Compile Include="Frames\HandshakeExtension.cs" />
+    <Compile Include="Frames\IFrameExtension.cs" />
+    <Compile Include="Frames\FrameType.cs" />
+    <Compile Include="SharpMessagingClient.cs" />
+    <Compile Include="Connection\Connection.cs" />
+    <Compile Include="Connection\ClientState.cs" />
+    <Compile Include="Frames\ExtensionFrameProcessor.cs" />
+    <Compile Include="Frames\ExtensionFrameState.cs" />
+    <Compile Include="Extensions\Ack\AckFrame.cs" />
+    <Compile Include="Extensions\Payload\DotNet\DotNetExtensionFrame.cs" />
+    <Compile Include="Extensions\Payload\IPayloadSerializerExtension.cs" />
+    <Compile Include="Frames\IExtensionService.cs" />
+    <Compile Include="Frames\Extensions\IExtensionSerializer.cs" />
+    <Compile Include="Frames\FrameFlags.cs" />
+    <Compile Include="Frames\ParseException.cs" />
+    <Compile Include="Frames\MessageFrame.cs" />
+    <Compile Include="Frames\HandshakeFrame.cs" />
+    <Compile Include="Connection\IBufferWriter.cs" />
+    <Compile Include="Connection\IConnection.cs" />
+    <Compile Include="Frames\IFrame.cs" />
+    <Compile Include="Payload\IPayloadSerializer.cs" />
+    <Compile Include="Payload\fastJsonSerializer.cs" />
+    <Compile Include="Persistance\IPersistantQueue.cs" />
+    <Compile Include="Persistance\IPersistantQueueFileReader.cs" />
+    <Compile Include="Persistance\IPersistantQueueFileWriter.cs" />
+    <Compile Include="Persistance\IQueueFileManager.cs" />
+    <Compile Include="Persistance\JsonQueue.cs" />
+    <Compile Include="Persistance\NamespaceDoc.cs" />
+    <Compile Include="Persistance\PeekRecord.cs" />
+    <Compile Include="Persistance\PersistantQueue.cs" />
+    <Compile Include="Persistance\PersistantQueueFileReader.cs" />
+    <Compile Include="Persistance\PersistantQueueFileWriter.cs" />
+    <Compile Include="Persistance\QueueFileManager.cs" />
+    <Compile Include="Persistance\QueueRecordSerializer.cs" />
+    <Compile Include="Frames\HandshakeFrameState.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Frames\MessageFrameState.cs" />
+    <Compile Include="SharpMessagingServer.cs" />
+    <Compile Include="Server\ServerClient.cs" />
+    <Compile Include="Connection\WriterContext.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="Persistance\index.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Persistance\NewFolder1\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

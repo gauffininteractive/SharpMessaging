@@ -9,21 +9,24 @@ SharpMessaging can send about 100 000 .NET objects per second (serialized using 
 
 * Reliable option (guaranteed delivery of every message as long as the application is running)
 * Persistance (guaranteed delivery, even if application is restarted)
-* Fast (100 000 msgs/second)
+* Fast (500 000 msgs/second without serialization)
 * Easy to setup.
 
 
 **Example client**
 
 ```csharp
-var registry = new ExtensionRegistry();
-registry.AddRequiredExtension(new JsonExtension());
-registry.AddOptionalExtension(new BatchAckExtension(){MessagesPerAck = 100});
-registry.AddRequiredExtension(new DotNetTypeExtension());
+internal class Program
+{
+	var registry = new ExtensionRegistry();
+	registry.AddRequiredExtension(new JsonExtension());
+	registry.AddOptionalExtension(new BatchAckExtension(){MessagesPerAck = 100});
+	registry.AddRequiredExtension(new DotNetTypeExtension());
 
-var client = new ClientConnection("TestClient", registry);
-client.Start("127.0.0.1", 8334);
-client.Send(new MessageFrame("Hello world"));
+	var client = new ClientConnection("TestClient", registry);
+	client.Start("127.0.0.1", 8334);
+	client.Send(new MessageFrame("Hello world"));
+}
 ```
 
 **Example server**
