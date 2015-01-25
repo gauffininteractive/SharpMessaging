@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace SharpMessaging.Persistance
+namespace SharpMessaging.Persistence
 {
     /// <summary>
     ///     A queue which stores entries on a persistant storage medium

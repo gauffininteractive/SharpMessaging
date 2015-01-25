@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace SharpMessaging.Persistance
+namespace SharpMessaging.Persistence
 {
     /// <summary>
     ///     Used to locate the correct file for reading and writing
@@ -22,6 +22,19 @@ namespace SharpMessaging.Persistance
         private readonly string _queuePath;
         private readonly LinkedList<string> _files = new LinkedList<string>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueueFileManager"/> class.
+        /// </summary>
+        /// <param name="queuePath">Path for all queues.</param>
+        /// <param name="optionalReadQueuePath">Additional path to read queue items from. useful in fail over clusters if you want to dequeue items from the node that just got failed.</param>
+        /// <param name="queueName">Name of the queue (all files related to this queue will begin with this name).</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// queuePath
+        /// or
+        /// optionalReadQueuePath
+        /// or
+        /// queueName
+        /// </exception>
         public QueueFileManager(string queuePath, string optionalReadQueuePath, string queueName)
         {
             if (queuePath == null) throw new ArgumentNullException("queuePath");
@@ -29,6 +42,25 @@ namespace SharpMessaging.Persistance
             if (queueName == null) throw new ArgumentNullException("queueName");
 
             _optionalReadQueuePath = optionalReadQueuePath;
+            _queuePath = queuePath;
+            _queueName = queueName;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueueFileManager"/> class.
+        /// </summary>
+        /// <param name="queuePath">The queue path.</param>
+        /// <param name="queueName">Name of the queue.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// queuePath
+        /// or
+        /// queueName
+        /// </exception>
+        public QueueFileManager(string queuePath, string queueName)
+        {
+            if (queuePath == null) throw new ArgumentNullException("queuePath");
+            if (queueName == null) throw new ArgumentNullException("queueName");
+
             _queuePath = queuePath;
             _queueName = queueName;
         }
@@ -55,6 +87,7 @@ namespace SharpMessaging.Persistance
                     .ToList()
                 : new List<string>();
 
+
          
             if (scannedFiles.Count == 0)
             {
@@ -70,9 +103,9 @@ namespace SharpMessaging.Persistance
                 {
                     _files.AddLast(file);
                 }
+                InitialQueueLength = CalculateQueueLength();
             }
 
-            InitialQueueLength = CalculateQueueLength();
         }
 
         /// <summary>

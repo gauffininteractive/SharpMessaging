@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using fastJSON;
+using SharpMessaging.Payload;
 
-namespace SharpMessaging.Persistance
+namespace SharpMessaging.Persistence
 {
     /// <summary>
     /// </summary>
@@ -15,16 +15,18 @@ namespace SharpMessaging.Persistance
     ///     that the read is on the last record in the file.
     /// </remarks>
     /// TODO: Catch InvalidDataException and call _readFile.Recover() in all read operations
-    public class JsonQueue
+    public class QueueService
     {
         private readonly ManualResetEvent _dataEnqueuedEvent = new ManualResetEvent(false);
         private readonly IPersistantQueue _queue;
         private readonly List<byte[]> _readList = new List<byte[]>();
         private readonly object _syncLock = new object();
         private int _queueCount;
+        private IQueueItemSerializer _itemSerializer;
 
-        public JsonQueue(string queueDirectory, string optionalReadQueueDirectory, string queueName)
+        public QueueService(string queueDirectory, string optionalReadQueueDirectory, string queueName, IQueueItemSerializer itemSerializer)
         {
+            _itemSerializer = itemSerializer;
             if (!Directory.Exists(queueDirectory))
                 Directory.CreateDirectory(queueDirectory);
 
@@ -32,10 +34,11 @@ namespace SharpMessaging.Persistance
             _queue.Open();
         }
 
-        public JsonQueue(IPersistantQueue persistantQueue)
+        public QueueService(IPersistantQueue persistantQueue, IQueueItemSerializer itemSerializer)
         {
             if (persistantQueue == null) throw new ArgumentNullException("persistantQueue");
             _queue = persistantQueue;
+            _itemSerializer = itemSerializer;
             _queue.Open();
             _queueCount = _queue.GetInitialQueueSize();
         }
@@ -51,12 +54,12 @@ namespace SharpMessaging.Persistance
 
         public void Enqueue(object message)
         {
-            var str = JSON.ToJSON(message);
+            var buffer = _itemSerializer.Serialize(message);
             _queueCount++;
 
             lock (_syncLock)
             {
-                _queue.Enqueue(Encoding.UTF8.GetBytes(str));
+                _queue.Enqueue(buffer);
                 _queue.FlushWriter();
             }
 
@@ -69,8 +72,8 @@ namespace SharpMessaging.Persistance
             {
                 foreach (var message in messages)
                 {
-                    var str = JSON.ToJSON(message);
-                    _queue.Enqueue(Encoding.UTF8.GetBytes(str));
+                    var buf = _itemSerializer.Serialize(message);
+                    _queue.Enqueue(buf);
                     ++_queueCount;
                 }
 
@@ -110,7 +113,7 @@ namespace SharpMessaging.Persistance
 
             foreach (var buffer in _readList)
             {
-                var obj = JSON.Parse(Encoding.UTF8.GetString(buffer));
+                var obj = _itemSerializer.Deserialize(buffer);
                 messages.Add(obj);
             }
         }
@@ -127,5 +130,11 @@ namespace SharpMessaging.Persistance
                 _queueCount -= _readList.Count;
             }
         }
+    }
+
+    public interface IQueueItemSerializer
+    {
+        object Deserialize(byte[] buffer);
+        byte[] Serialize(object message);
     }
 }

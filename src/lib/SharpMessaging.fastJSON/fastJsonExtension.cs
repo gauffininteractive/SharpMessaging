@@ -33,7 +33,7 @@ namespace SharpMessaging.fastJSON
 
         public IPayloadSerializer CreatePayloadSerializer()
         {
-            return new FastJsonSerializer();
+            return new fastJsonSerializer();
         }
 
         public void Parse(HandshakeExtension info)

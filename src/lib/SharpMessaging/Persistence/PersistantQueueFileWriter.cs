@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace SharpMessaging.Persistance
+namespace SharpMessaging.Persistence
 {
     /// <summary>
     ///     Append only writer to a file.

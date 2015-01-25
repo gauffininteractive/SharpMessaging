@@ -1,4 +1,4 @@
-namespace SharpMessaging.Persistance
+namespace SharpMessaging.Persistence
 {
     /// <summary>
     ///     A record that we have read from the file but not yet marked as read.

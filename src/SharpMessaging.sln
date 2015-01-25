@@ -5,11 +5,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpMessaging", "lib\Sharp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpMessaging.Tests", "lib\SharpMessaging.Tests\SharpMessaging.Tests.csproj", "{CC9C68A8-5902-41B7-B017-50523D2546F6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpMessaging.BenchmarkingTool", "tools\SharpMessaging.BenchmarkingTool\SharpMessaging.BenchmarkApp.csproj", "{79E9A3D5-AA19-4796-A17D-4BACF3B2343D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpMessaging.BenchmarkApp", "tools\SharpMessaging.BenchmarkingTool\SharpMessaging.BenchmarkApp.csproj", "{79E9A3D5-AA19-4796-A17D-4BACF3B2343D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpMessaging.DemoApp", "tools\SharpMessaging.DemoApp\SharpMessaging.DemoApp.csproj", "{9C4D09E8-B94A-4E27-ADAE-FEE135129929}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpMessaging.fastJSON", "lib\SharpMessaging.fastJSON\SharpMessaging.fastJSON.csproj", "{C0B873BC-8A50-426E-B12E-FB9663B2750C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{6D9CCE63-8A07-40DD-A2E6-7ECBF4AA9075}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
