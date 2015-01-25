@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace SharpMessaging.Persistance
+namespace SharpMessaging.Persistence
 {
     internal class QueueRecordSerializer
     {

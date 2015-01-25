@@ -1,4 +1,4 @@
-﻿namespace SharpMessaging.Persistance
+﻿namespace SharpMessaging.Persistence
 {
     public interface IPersistantQueueFileWriter
     {

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace SharpMessaging.Persistance
+namespace SharpMessaging.Persistence
 {
     public interface IPersistantQueueFileReader
     {

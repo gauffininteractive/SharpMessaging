@@ -1,6 +1,6 @@
 using System;
 
-namespace SharpMessaging.Persistance
+namespace SharpMessaging.Persistence
 {
     /// <summary>
     ///     Used to keep track of all files that have been created for a queue.

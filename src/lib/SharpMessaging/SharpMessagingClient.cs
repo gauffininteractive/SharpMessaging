@@ -24,7 +24,7 @@ namespace SharpMessaging
         private IAckReceiver _ackReceiver;
         private IAckSender _ackSender;
         private Type _payloadDotNetType;
-        private FastJsonSerializer _payloadSerializer;
+        private IPayloadSerializer _payloadSerializer;
         private ushort _sequenceCounter = 0;
         private ClientState _state;
 
@@ -142,18 +142,13 @@ namespace SharpMessaging
             _connection.Send(frame);
 
 
-            var name = _extensionService.FindFirstExtensionNamed("json", "xml", "protobuf");
-            switch (name)
-            {
-                case "json":
-                    _payloadSerializer = new FastJsonSerializer();
-                    break;
-            }
+            var id = _extensionService.FindFirstExtensionId("json", "xml", "protobuf");
+            _payloadSerializer = (((IPayloadExtension)_extensionService.Get(id))).CreatePayloadSerializer();
 
             _ackExtensionId = _extensionService.FindFirstExtensionId("batch-ack", "ack");
             if (_ackExtensionId != 0)
             {
-                name = _extensionService.FindFirstExtensionNamed("batch-ack", "ack");
+                var name = _extensionService.FindFirstExtensionNamed("batch-ack", "ack");
                 var extProperties = frame.GetExtension(name);
                 var ackExtension = (IAckExtension) _extensionService.Get(_ackExtensionId);
                 _ackReceiver = ackExtension.CreateAckReceiver(_connection, _ackExtensionId, DeliverMessage,

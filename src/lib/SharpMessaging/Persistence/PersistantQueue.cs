@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpMessaging.Persistance
+namespace SharpMessaging.Persistence
 {
     /// <summary>
     ///     Facade for the queue files
@@ -25,6 +25,15 @@ namespace SharpMessaging.Persistance
             if (queueName == null) throw new ArgumentNullException("queueName");
 
             _fileManager = new QueueFileManager(queuePath, optionalReadQueuePath, queueName);
+            MaxFileSizeInBytes = 30000000;
+        }
+
+        public PersistantQueue(string queuePath, string queueName)
+        {
+            if (queuePath == null) throw new ArgumentNullException("queuePath");
+            if (queueName == null) throw new ArgumentNullException("queueName");
+
+            _fileManager = new QueueFileManager(queuePath, queueName);
             MaxFileSizeInBytes = 30000000;
         }
 
