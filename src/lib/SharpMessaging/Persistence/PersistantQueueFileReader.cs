@@ -33,6 +33,7 @@ namespace SharpMessaging.Persistence
         private readonly QueueRecordSerializer _queueRecordSerializer = new QueueRecordSerializer();
         private FileStream _positionStream;
         private FileStream _readStream;
+        private byte[] _filePositionToStore;
 
         public PersistantQueueFileReader(string fileName)
         {
@@ -76,17 +77,34 @@ namespace SharpMessaging.Persistence
         /// <param name="maxNumberOfMessages">Number of wanted records (will return less if less are available)</param>
         public void Dequeue(List<byte[]> messages, int maxNumberOfMessages)
         {
+            var initialCount = messages.Count;
             byte[] record;
             do
             {
-                if (!TryDequeue(out record, false))
-                    break;
+                if (!TryDequeueInternal(out record))
+                {
+                    if (initialCount != messages.Count)
+                        WritePosition();
+                    return;
+                }
+
 
                 --maxNumberOfMessages;
                 messages.Add(record);
             } while (record != null && maxNumberOfMessages > 0);
 
+            if (initialCount != messages.Count)
+                WritePosition();
+        }
+
+        private void WritePosition()
+        {
+            if (_filePositionToStore == null)
+                throw new InvalidOperationException("Position already written");
+
+            _positionStream.Write(_filePositionToStore, 0, 4);
             _positionStream.Flush();
+            _filePositionToStore = null;
         }
 
         /// <summary>
@@ -175,7 +193,10 @@ namespace SharpMessaging.Persistence
         /// <returns></returns>
         public bool TryDequeue(out byte[] buffer)
         {
-            return TryDequeue(out buffer, true);
+            var item = TryDequeue(out buffer);
+            if (item)
+                WritePosition();
+            return item;
         }
 
         /// <summary>
@@ -207,7 +228,7 @@ namespace SharpMessaging.Persistence
         /// <param name="buffer"></param>
         /// <param name="flush">Should be used when no more records will be dequeued</param>
         /// <returns></returns>
-        private bool TryDequeue(out byte[] buffer, bool flush)
+        private bool TryDequeueInternal(out byte[] buffer)
         {
             if (_peekedRecords.Any())
             {
@@ -215,10 +236,7 @@ namespace SharpMessaging.Persistence
                 _peekedRecords.RemoveFirst();
 
                 //5 = header
-                var buf2 = BitConverter.GetBytes(record.Position + record.RecordSize + 5);
-                _positionStream.Write(buf2, 0, 4);
-                if (flush)
-                    _positionStream.Flush();
+                _filePositionToStore = BitConverter.GetBytes(record.Position + record.RecordSize + 5);
                 buffer = record.Buffer;
                 return true;
             }
@@ -227,10 +245,7 @@ namespace SharpMessaging.Persistence
             if (buffer == null)
                 return false;
 
-            var buf = BitConverter.GetBytes((int) _readStream.Position);
-            _positionStream.Write(buf, 0, 4);
-            if (flush)
-                _positionStream.Flush();
+            _filePositionToStore = BitConverter.GetBytes((int)_readStream.Position);
             return true;
         }
     }

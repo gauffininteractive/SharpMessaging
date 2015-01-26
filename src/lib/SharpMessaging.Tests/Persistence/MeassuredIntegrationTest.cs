@@ -58,7 +58,7 @@ namespace SharpMessaging.Tests.Persistence
                 _queue.Dequeue(items, 100);
             }
             dequeue.Stop();
-            Console.WriteLine("Dequeue items: " + dequeue.ElapsedMilliseconds + "ms = " + (ItemsToEnqueue * 1000 / dequeue.ElapsedMilliseconds) + "items/s");
+            Console.WriteLine("Dequeue items: " + dequeue.ElapsedMilliseconds + "ms = " + (ItemsToEnqueue * 2 * 1000 / dequeue.ElapsedMilliseconds) + "items/s");
 
         }
 
