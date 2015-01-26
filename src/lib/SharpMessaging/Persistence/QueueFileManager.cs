@@ -91,7 +91,7 @@ namespace SharpMessaging.Persistence
          
             if (scannedFiles.Count == 0)
             {
-                WriteFileName = GetFileName();
+                WriteFileName = GetWriteFileName();
                 ReadFileName = WriteFileName;
                 _files.AddLast(WriteFileName);
             }
@@ -158,7 +158,7 @@ namespace SharpMessaging.Persistence
         /// </remarks>
         public IPersistantQueueFileWriter CreateNewWriteFile()
         {
-            WriteFileName = GetFileName();
+            WriteFileName = GetWriteFileName();
             _files.AddLast(WriteFileName);
             var file = new PersistantQueueFileWriter(WriteFileName);
             file.Open();
@@ -230,9 +230,9 @@ namespace SharpMessaging.Persistence
             return File.Exists(fileName);
         }
 
-        private string GetFileName()
+        private string GetWriteFileName()
         {
-            return Path.Combine(_queuePath, string.Format("{0}_{1}.dat", _queueName, DateTime.UtcNow.ToString("yyyyMMdd_HHmmss")));
+            return Path.Combine(_queuePath, string.Format("{0}_{1}.dat", _queueName, Guid.NewGuid().ToString("N")));
         }
     }
 }

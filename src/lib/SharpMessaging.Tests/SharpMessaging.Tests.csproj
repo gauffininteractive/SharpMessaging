@@ -61,6 +61,7 @@
     <Compile Include="Extensions\Ack\BatchAckSenderTests.cs" />
     <Compile Include="HandshakeFrameTests.cs" />
     <Compile Include="MessageFrameTests.cs" />
+    <Compile Include="Persistence\MeassuredIntegrationTest.cs" />
     <Compile Include="Persistence\PersistantQueueIntegrationTests.cs" />
     <Compile Include="Persistence\PersistantQueueTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
