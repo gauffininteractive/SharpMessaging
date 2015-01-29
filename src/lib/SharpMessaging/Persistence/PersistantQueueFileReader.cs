@@ -31,9 +31,9 @@ namespace SharpMessaging.Persistence
         private readonly LinkedList<PeekRecord> _peekedRecords = new LinkedList<PeekRecord>();
         private readonly string _positionFile;
         private readonly QueueRecordSerializer _queueRecordSerializer = new QueueRecordSerializer();
+        private byte[] _filePositionToStore;
         private FileStream _positionStream;
         private FileStream _readStream;
-        private byte[] _filePositionToStore;
 
         public PersistantQueueFileReader(string fileName)
         {
@@ -75,8 +75,9 @@ namespace SharpMessaging.Persistence
         /// </summary>
         /// <param name="messages">Will be cleared and then filled with all available buffers</param>
         /// <param name="maxNumberOfMessages">Number of wanted records (will return less if less are available)</param>
-        public void Dequeue(List<byte[]> messages, int maxNumberOfMessages)
+        public int Dequeue(List<byte[]> messages, int maxNumberOfMessages)
         {
+            int dequeueCount = 0;
             var initialCount = messages.Count;
             byte[] record;
             do
@@ -85,26 +86,19 @@ namespace SharpMessaging.Persistence
                 {
                     if (initialCount != messages.Count)
                         WritePosition();
-                    return;
+                    return dequeueCount;
                 }
 
 
                 --maxNumberOfMessages;
+                ++dequeueCount;
                 messages.Add(record);
             } while (record != null && maxNumberOfMessages > 0);
 
             if (initialCount != messages.Count)
                 WritePosition();
-        }
 
-        private void WritePosition()
-        {
-            if (_filePositionToStore == null)
-                throw new InvalidOperationException("Position already written");
-
-            _positionStream.Write(_filePositionToStore, 0, 4);
-            _positionStream.Flush();
-            _filePositionToStore = null;
+            return dequeueCount;
         }
 
         /// <summary>
@@ -138,25 +132,26 @@ namespace SharpMessaging.Persistence
         /// <summary>
         ///     Read from the file, but do not update the positition (in the position file)
         /// </summary>
-        /// <param name="messages">Will be cleared and then filled with all available buffers</param>
+        /// <param name="messages">Appended with all available buffers (at most <c>maxNumberOfMessages</c>)</param>
         /// <param name="maxNumberOfMessages">Number of wanted records (will return less if less are available)</param>
         /// <remarks>
         ///     <para>
-        ///         Caches peeked records and returns the same if no Dequeus have been made between the Peeks
+        ///         Caches peeked records and returns the same if no <c>Dequeue()</c> have been made between the <c>Peek()</c> invocations.
         ///     </para>
         /// </remarks>
         public void Peek(List<byte[]> messages, int maxNumberOfMessages)
         {
             if (_peekedRecords.Any())
             {
-                PeekRecord peekRecord = null;
                 var node = _peekedRecords.First;
                 while (messages.Count < maxNumberOfMessages && node != null)
                 {
-                    peekRecord = node.Value;
+                    var peekRecord = node.Value;
                     messages.Add(peekRecord.Buffer);
                     node = node.Next;
                 }
+                if (messages.Count == maxNumberOfMessages)
+                    return;
             }
 
 
@@ -222,11 +217,20 @@ namespace SharpMessaging.Persistence
             return true;
         }
 
+        private void WritePosition()
+        {
+            if (_filePositionToStore == null)
+                throw new InvalidOperationException("Position already written");
+
+            _positionStream.Write(_filePositionToStore, 0, 4);
+            _positionStream.Flush();
+            _filePositionToStore = null;
+        }
+
         /// <summary>
         ///     Dequeue and flush current position to file
         /// </summary>
         /// <param name="buffer"></param>
-        /// <param name="flush">Should be used when no more records will be dequeued</param>
         /// <returns></returns>
         private bool TryDequeueInternal(out byte[] buffer)
         {
@@ -245,7 +249,7 @@ namespace SharpMessaging.Persistence
             if (buffer == null)
                 return false;
 
-            _filePositionToStore = BitConverter.GetBytes((int)_readStream.Position);
+            _filePositionToStore = BitConverter.GetBytes((int) _readStream.Position);
             return true;
         }
     }

@@ -19,9 +19,16 @@ namespace SharpMessaging.Extensions.Ack
         bool CanReceiveNewMessageFrames { get; }
 
         /// <summary>
+        /// check if we've received this frame already (and should therefore re-ack it instead of processing it)
+        /// </summary>
+        /// <param name="frame">frame to check (received from remote end point)</param>
+        /// <returns><c>true</c> if we should resend the ack for it; <c>false</c> means that we can process it.</returns>
+        bool ShouldReAck(MessageFrame frame);
+
+        /// <summary>
         ///     Frame that we should ack
         /// </summary>
         /// <param name="frame"><c>true</c> if we have not previously received this frame; otherwise <c>false</c>.</param>
-        bool AddFrame(MessageFrame frame);
+        bool AckFrame(MessageFrame frame);
     }
 }

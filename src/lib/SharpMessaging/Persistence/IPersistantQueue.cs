@@ -13,6 +13,11 @@ namespace SharpMessaging.Persistence
         int MaxFileSizeInBytes { get; set; }
 
         /// <summary>
+        ///     Current amount of queued items.
+        /// </summary>
+        int Count { get; }
+
+        /// <summary>
         ///     Close file
         /// </summary>
         void Close();
@@ -85,6 +90,10 @@ namespace SharpMessaging.Persistence
         /// <returns><c>true</c> if there was a record available; otherwise <c>false</c></returns>
         bool TryPeek(out byte[] buffer);
 
-        int GetInitialQueueSize();
+        /// <summary>
+        /// Remove messages directly without reading them.
+        /// </summary>
+        /// <param name="count"></param>
+        void Remove(int count);
     }
 }

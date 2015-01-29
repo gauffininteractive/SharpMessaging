@@ -13,11 +13,12 @@ namespace SharpMessaging
     {
         public const byte Major = 1;
         public const byte Minor = 1;
+        private readonly ConcurrentQueue<ServerClient> _availableClientPool = new ConcurrentQueue<ServerClient>();
+        private readonly BufferManager _bufferManager = new BufferManager(65535, 10000);
         private readonly IExtensionRegistry _extensionProvider;
+        public Action<ServerClient, SocketError> ClientDisconnected;
         public Action<ServerClient, MessageFrame> FrameReceived;
         private TcpListener _listener;
-        ConcurrentQueue<ServerClient> _availableClientPool = new ConcurrentQueue<ServerClient>();
-        private BufferManager _bufferManager = new BufferManager(65535, 10000);
 
         public SharpMessagingServer(IExtensionRegistry extensionProvider)
         {
@@ -33,7 +34,6 @@ namespace SharpMessaging
 
 
         public string ServerName { get; set; }
-        public Action<ServerClient, SocketError> ClientDisconnected;
 
         public void Start(int port)
         {
@@ -64,7 +64,7 @@ namespace SharpMessaging
                 else
                 {
                     Console.WriteLine("Reusing client");
-                    connection.Start(socket);                    
+                    connection.Start(socket);
                 }
             }
             catch (Exception exception)
@@ -75,7 +75,7 @@ namespace SharpMessaging
 
         private void OnDisconnected(object sender, DisconnectedEventArgs e)
         {
-            var client=(ServerClient) sender;
+            var client = (ServerClient) sender;
             ClientDisconnected(client, e.Error);
             Console.WriteLine("Cleaning up client");
             client.Reset();

@@ -65,7 +65,15 @@ namespace SharpMessaging.Server
             Disconnected(this, e);
         }
 
-        public event EventHandler<DisconnectedEventArgs> Disconnected; 
+        public event EventHandler<DisconnectedEventArgs> Disconnected;
+
+        /// <summary>
+        /// This client can be used to deliver messages
+        /// </summary>
+        public bool IsAvailableForDelivery
+        {
+            get { return _ackReceiver == null || _ackReceiver.FreeSlots > 0; }
+        }
 
         public void Send(MessageFrame frame)
         {
@@ -74,7 +82,7 @@ namespace SharpMessaging.Server
                 _sequenceCounter = 0;
 
             if (_ackReceiver != null)
-                _ackReceiver.AddFrame(frame);
+                _ackReceiver.Send(frame);
             else
                 DeliverMessage(frame);
         }
@@ -130,6 +138,13 @@ namespace SharpMessaging.Server
                 throw new Exception("Handshake not completed, should not have received a message frame.");
 
 
+            // using acks and the specified frame have already been recieved.
+            if (_ackSender != null && _ackSender.ShouldReAck(frame))
+            {
+                _ackSender.AckFrame(frame);
+                return;
+            }
+
             if (_payloadSerializer != null)
             {
                 if (_payloadDotNetType != null)
@@ -150,8 +165,13 @@ namespace SharpMessaging.Server
                 }
             }
 
-            if (_ackSender == null || _ackSender.AddFrame(frame))
-                FrameReceived(this, frame);
+            
+            FrameReceived(this, frame);
+
+            //Do it after the event trigger, so that any exception
+            //doesn't ack the frame (as the client did not process it correctly).
+            if (_ackSender != null)
+                _ackSender.AckFrame(frame);
         }
 
         private void NegotiateHandshake(HandshakeFrame handshakeFrame)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace SharpMessaging.Persistence
 {
@@ -16,6 +17,7 @@ namespace SharpMessaging.Persistence
     public class PersistantQueue : IPersistantQueue
     {
         private readonly IQueueFileManager _fileManager;
+        private int _count = 0;
         private IPersistantQueueFileReader _readFile;
         private IPersistantQueueFileWriter _writefile;
 
@@ -55,6 +57,17 @@ namespace SharpMessaging.Persistence
         /// </remarks>
         public int MaxFileSizeInBytes { get; set; }
 
+        public int Count
+        {
+            get
+            {
+                if (_writefile == null)
+                    throw new InvalidOperationException("Must Open() queue first.");
+
+                return _count;
+            }
+        }
+
         /// <summary>
         ///     Close both the reader and writer side.
         /// </summary>
@@ -73,15 +86,21 @@ namespace SharpMessaging.Persistence
         {
             if (buffers == null) throw new ArgumentNullException("buffers");
 
-            buffers.Clear();
-            _readFile.Dequeue(buffers, maxAmountOfMessages);
+            var initialSize = buffers.Count;
+            var count1 = _readFile.Dequeue(buffers, maxAmountOfMessages);
             if (buffers.Any())
+            {
+                Interlocked.Add(ref _count, 0 - count1);
                 return;
+            }
+
 
             if (!TryOpenNextReadFile())
                 return;
 
-            _readFile.Dequeue(buffers, maxAmountOfMessages);
+            var leftToEnqueue = maxAmountOfMessages - (buffers.Count - initialSize);
+            var count2 = _readFile.Dequeue(buffers, leftToEnqueue);
+            Interlocked.Add(ref _count, 0 - (count1 + count2));
         }
 
         /// <summary>
@@ -124,6 +143,7 @@ namespace SharpMessaging.Persistence
             }
 
             _writefile.Enqueue(buffer, offset, count);
+            Interlocked.Increment(ref _count);
         }
 
         /// <summary>
@@ -146,18 +166,19 @@ namespace SharpMessaging.Persistence
             _fileManager.Scan();
             _writefile = _fileManager.OpenCurrentWriteFile();
             _readFile = _fileManager.OpenCurrentReadFile();
+            _count = _fileManager.InitialQueueLength;
         }
 
         /// <summary>
         ///     Read from the file, but do not update the positition (in the position file)
         /// </summary>
-        /// <param name="buffers">Will be cleared and then filled with all available buffers</param>
+        /// <param name="buffers">The list will be appended with all available records (max <c>maxNumberOfMessages</c> records).</param>
         /// <param name="maxNumberOfMessages">Number of wanted records (will return less if less are available)</param>
         public void Peek(List<byte[]> buffers, int maxNumberOfMessages)
         {
             if (buffers == null) throw new ArgumentNullException("buffers");
 
-            buffers.Clear();
+            var initialSize = buffers.Count;
             _readFile.Peek(buffers, maxNumberOfMessages);
             if (buffers.Any())
                 return;
@@ -165,7 +186,8 @@ namespace SharpMessaging.Persistence
             if (!TryOpenNextReadFile())
                 return;
 
-            _readFile.Peek(buffers, maxNumberOfMessages);
+            var leftToEnqueue = maxNumberOfMessages - (buffers.Count - initialSize);
+            _readFile.Peek(buffers, leftToEnqueue);
         }
 
         /// <summary>
@@ -176,12 +198,21 @@ namespace SharpMessaging.Persistence
         public bool TryDequeue(out byte[] buffer)
         {
             if (_readFile.TryDequeue(out buffer))
+            {
+                Interlocked.Decrement(ref _count);
                 return true;
+            }
 
             if (!TryOpenNextReadFile())
                 return false;
 
-            return _readFile.TryDequeue(out buffer);
+            var success = _readFile.TryDequeue(out buffer);
+            if (success)
+            {
+                Interlocked.Decrement(ref _count);
+            }
+
+            return success;
         }
 
         /// <summary>
@@ -200,9 +231,24 @@ namespace SharpMessaging.Persistence
             return _readFile.TryPeek(out buffer);
         }
 
-        public int GetInitialQueueSize()
+        public void Remove(int count)
         {
-            return _fileManager.InitialQueueLength;
+            if (count <= 0 || count > Count)
+                throw new ArgumentOutOfRangeException("count", count, string.Format("Expected to be between 1 and {0}.", count));
+
+            var buffers = new List<byte[]>();
+            var count1 = _readFile.Dequeue(buffers, count);
+            if (buffers.Any())
+            {
+                Interlocked.Add(ref _count, 0 - count1);
+                return;
+            }
+
+            if (!TryOpenNextReadFile())
+                return;
+
+            var count2 = _readFile.Dequeue(buffers, count - count1);
+            Interlocked.Add(ref _count, 0 - (count1 + count2));
         }
 
         private bool TryOpenNextReadFile()

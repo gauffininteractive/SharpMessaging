@@ -20,6 +20,7 @@ namespace SharpMessaging.Connection
         private readonly SocketAsyncEventArgs _writeArgs;
         private readonly CircularQueueList<IBufferWriter> _writeQueue = new CircularQueueList<IBufferWriter>(1000000);
         private readonly WriterContext _writerContext;
+        ErrorFrame _errorFrame = new ErrorFrame(null);
         public Action<ExtensionFrame> ExtensionFrameReceived;
         public Action<MessageFrame> MessageFrameReceived;
         public Action<int> WriteCompleted;
@@ -240,6 +241,10 @@ namespace SharpMessaging.Connection
                 {
                     case FrameType.Unknown:
                         var flags = (FrameFlags) buffer[offset];
+                        if ((flags & FrameFlags.ErrorFrame) != 0)
+                        {
+                            _frameType = FrameType.Error;
+                        }
                         if ((flags & FrameFlags.ExtensionFrame) != 0)
                         {
                             _frameType = FrameType.Extension;
@@ -264,6 +269,9 @@ namespace SharpMessaging.Connection
                         }
 
                         break;
+
+                    case FrameType.Error:
+
 
                     case FrameType.Extension:
                         var isCompleted2 = _extensionFrameProcessor.Read(buffer, ref offset, ref bytesTransferred);

@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using SharpMessaging.Payload;
 
 namespace SharpMessaging.Persistence
 {
@@ -15,16 +13,15 @@ namespace SharpMessaging.Persistence
     ///     that the read is on the last record in the file.
     /// </remarks>
     /// TODO: Catch InvalidDataException and call _readFile.Recover() in all read operations
-    public class QueueService
+    public class QueueService : IQueueStorage
     {
         private readonly ManualResetEvent _dataEnqueuedEvent = new ManualResetEvent(false);
+        private readonly IQueueItemSerializer _itemSerializer;
         private readonly IPersistantQueue _queue;
-        private readonly List<byte[]> _readList = new List<byte[]>();
         private readonly object _syncLock = new object();
-        private int _queueCount;
-        private IQueueItemSerializer _itemSerializer;
 
-        public QueueService(string queueDirectory, string optionalReadQueueDirectory, string queueName, IQueueItemSerializer itemSerializer)
+        public QueueService(string queueDirectory, string optionalReadQueueDirectory, string queueName,
+            IQueueItemSerializer itemSerializer)
         {
             _itemSerializer = itemSerializer;
             if (!Directory.Exists(queueDirectory))
@@ -40,7 +37,14 @@ namespace SharpMessaging.Persistence
             _queue = persistantQueue;
             _itemSerializer = itemSerializer;
             _queue.Open();
-            _queueCount = _queue.GetInitialQueueSize();
+        }
+
+        /// <summary>
+        ///     Number of messages in the queue
+        /// </summary>
+        public int Count
+        {
+            get { return _queue.Count; }
         }
 
 
@@ -55,7 +59,6 @@ namespace SharpMessaging.Persistence
         public void Enqueue(object message)
         {
             var buffer = _itemSerializer.Serialize(message);
-            _queueCount++;
 
             lock (_syncLock)
             {
@@ -74,31 +77,22 @@ namespace SharpMessaging.Persistence
                 {
                     var buf = _itemSerializer.Serialize(message);
                     _queue.Enqueue(buf);
-                    ++_queueCount;
                 }
 
                 _queue.FlushWriter();
             }
         }
 
-        /// <summary>
-        ///     Number of messages in the queue
-        /// </summary>
-        public int GetQueueCount()
-        {
-            return _queueCount;
-        }
-
         public void Peek(IList<object> messages, int maxNumberOfMessages)
         {
+            var bufferList = new List<byte[]>();
             lock (_syncLock)
             {
-                _readList.Clear();
-                _queue.Peek(_readList, maxNumberOfMessages);
+                _queue.Peek(bufferList, maxNumberOfMessages);
             }
 
             // Wait if there are no more data to be delivered.
-            if (!_readList.Any())
+            if (!bufferList.Any())
             {
                 _dataEnqueuedEvent.Reset();
                 if (!_dataEnqueuedEvent.WaitOne(100))
@@ -106,35 +100,47 @@ namespace SharpMessaging.Persistence
 
                 lock (_syncLock)
                 {
-                    _readList.Clear();
-                    _queue.Peek(_readList, maxNumberOfMessages);
+                    _queue.Peek(bufferList, maxNumberOfMessages);
                 }
             }
 
-            foreach (var buffer in _readList)
+            foreach (var buffer in bufferList)
             {
                 var obj = _itemSerializer.Deserialize(buffer);
                 messages.Add(obj);
             }
         }
 
-        public void PopMessages(int numberOfMessages)
+        /// <summary>
+        ///     Remove messages from the queue
+        /// </summary>
+        /// <param name="messages"></param>
+        /// <param name="maxNumberOfMessages"></param>
+        public void Dequeue(IList<object> messages, int maxNumberOfMessages)
         {
-            _readList.Clear();
-            if (numberOfMessages == 0)
-                return;
+            if (messages == null) throw new ArgumentNullException("messages");
+            if (maxNumberOfMessages == 0)
+                throw new ArgumentOutOfRangeException("maxNumberOfMessages", maxNumberOfMessages,
+                    "Must specify a valid count.");
 
             lock (_syncLock)
             {
-                _queue.Dequeue(_readList, numberOfMessages);
-                _queueCount -= _readList.Count;
+                var bufferList = new List<byte[]>();
+                _queue.Dequeue(bufferList, maxNumberOfMessages);
+                foreach (var buffer in bufferList)
+                {
+                    var obj = _itemSerializer.Deserialize(buffer);
+                    messages.Add(obj);
+                }
             }
         }
-    }
 
-    public interface IQueueItemSerializer
-    {
-        object Deserialize(byte[] buffer);
-        byte[] Serialize(object message);
+        public void Remove(int ackCount)
+        {
+            lock (_syncLock)
+            {
+                _queue.Remove(ackCount);
+            }
+        }
     }
 }

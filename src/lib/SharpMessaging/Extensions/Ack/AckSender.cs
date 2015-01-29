@@ -9,7 +9,7 @@ using SharpMessaging.Frames;
 
 namespace SharpMessaging.Extensions.Ack
 {
-    public class BatchAckSender : IAckSender, IDisposable
+    public class AckSender : IAckSender, IDisposable
     {
         private readonly Timer _ackTimer;
         private readonly IConnection _connection;
@@ -22,19 +22,18 @@ namespace SharpMessaging.Extensions.Ack
         private FileStream _logStream;
         private int _numberOfFramesToAck;
 
-        public BatchAckSender(IConnection connection, byte extensionId)
+        public AckSender(IConnection connection, byte extensionId)
         {
             _connection = connection;
             _extensionId = extensionId;
             _ackTimer = new Timer(OnCheckTime, 0, 25, 25);
-            Threshold = 10;
             TimeoutBeforeSendingAck = TimeSpan.FromSeconds(1);
         }
 
-        public int Threshold { get; set; }
         public TimeSpan TimeoutBeforeSendingAck { get; set; }
+        public int Threshold { get; set; }
 
-        public bool AddFrame(MessageFrame frame)
+        public bool AckFrame(MessageFrame frame)
         {
             if (_lastAckTime == DateTime.MinValue)
                 _lastAckTime = DateTime.UtcNow;

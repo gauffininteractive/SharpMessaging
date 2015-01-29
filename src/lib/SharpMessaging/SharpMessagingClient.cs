@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
@@ -9,6 +10,7 @@ using SharpMessaging.Extensions.Payload.DotNet;
 using SharpMessaging.Frames;
 using SharpMessaging.Frames.Extensions;
 using SharpMessaging.Payload;
+using SharpMessaging.Persistence;
 
 namespace SharpMessaging
 {
@@ -27,6 +29,8 @@ namespace SharpMessaging
         private IPayloadSerializer _payloadSerializer;
         private ushort _sequenceCounter = 0;
         private ClientState _state;
+        private IQueueStorage _messageStore;
+
 
 
         public SharpMessagingClient(string identity, IExtensionRegistry extensionRegistry)
@@ -63,30 +67,40 @@ namespace SharpMessaging
             if (_state != ClientState.Ready)
                 throw new Exception("Handshake not completed, should not have received a message frame.");
 
-            if (_payloadSerializer == null)
+            // using acks and the specified frame have already been recieved.
+            if (_ackSender != null && _ackSender.ShouldReAck(frame))
             {
-                FrameReceived(frame);
+                _ackSender.AckFrame(frame);
                 return;
             }
-
-            if (_payloadDotNetType != null)
+                
+            if (_payloadSerializer != null)
             {
-                frame.Payload = frame.IsFlaggedAsSmall
-                    ? _payloadSerializer.Deserialize(_payloadDotNetType, frame.PayloadBuffer.Array,
-                        frame.PayloadBuffer.Offset,
-                        frame.PayloadBuffer.Count)
-                    : _payloadSerializer.Deserialize(_payloadDotNetType, frame.PayloadStream);
+                if (_payloadDotNetType != null)
+                {
+                    frame.Payload = frame.IsFlaggedAsSmall
+                        ? _payloadSerializer.Deserialize(_payloadDotNetType, frame.PayloadBuffer.Array,
+                            frame.PayloadBuffer.Offset,
+                            frame.PayloadBuffer.Count)
+                        : _payloadSerializer.Deserialize(_payloadDotNetType, frame.PayloadStream);
+                }
+                else
+                {
+                    frame.Payload = frame.IsFlaggedAsSmall
+                        ? _payloadSerializer.Deserialize(frame.PayloadBuffer.Array,
+                            frame.PayloadBuffer.Offset,
+                            frame.PayloadBuffer.Count)
+                        : _payloadSerializer.Deserialize(frame.PayloadStream);
+                }
             }
-            else
-            {
-                frame.Payload = frame.IsFlaggedAsSmall
-                    ? _payloadSerializer.Deserialize(frame.PayloadBuffer.Array,
-                        frame.PayloadBuffer.Offset,
-                        frame.PayloadBuffer.Count)
-                    : _payloadSerializer.Deserialize(frame.PayloadStream);
-            }
+         
 
             FrameReceived(frame);
+
+            //Do it after the event trigger, so that any exception
+            //doesn't ack the frame (as the client did not process it correctly).
+            if (_ackSender != null)
+                _ackSender.AckFrame(frame);
         }
 
         public void AckFrame(MessageFrame frame)
@@ -97,18 +111,33 @@ namespace SharpMessaging
 
         public void Send(MessageFrame frame)
         {
+            if (frame == null) throw new ArgumentNullException("frame");
+
             //if (!_authenticationEvent.WaitOne(100000))
             //    throw new InvalidOperationException("Handshake was not completed in a reasonable time.");
 
-            if (frame.PayloadBuffer.Count == 0)
-                Debugger.Break();
 
             frame.SequenceNumber = ++_sequenceCounter;
             if (_sequenceCounter == ushort.MaxValue)
                 _sequenceCounter = 0;
 
             if (_ackReceiver != null)
-                _ackReceiver.AddFrame(frame);
+            {
+                // we can allow all requests to send messages
+                // if 
+                if (_messageStore != null)
+                {
+                    _messageStore.Enqueue(frame);
+                    if (_ackReceiver.CanSend(frame))
+                        _ackReceiver.Send(frame);
+                }
+                else
+                {
+                    if (!_ackReceiver.CanSend(frame))
+                        throw new InvalidOperationException("Cannot enqueue more messages that the given threshold.");
+                    _ackReceiver.Send(frame);
+                }
+            }
             else
                 DeliverMessage(frame);
         }
@@ -169,9 +198,22 @@ namespace SharpMessaging
             }
             if (frame.ExtensionId == _ackExtensionId)
             {
-                _ackReceiver.Confirm((AckFrame) frame);
+                var ackCount = _ackReceiver.Confirm((AckFrame) frame);
+                if (_messageStore != null)
+                {
+                    _messageStore.Remove(ackCount);
+                    var msgsToSend = new List<object>();
+                    _messageStore.Peek(msgsToSend, _ackReceiver.FreeSlots);
+                    foreach (var o in msgsToSend)
+                    {
+                        //TODO: We should really send a list so that SendMore() can be sued
+                        _ackReceiver.Send((MessageFrame)o);    
+                    }
+                }
                 if (AckReceived != null)
                     AckReceived((AckFrame) frame);
+                
+                
             }
         }
 

@@ -5,9 +5,9 @@ using SharpMessaging.Frames;
 
 namespace SharpMessaging.Extensions.Ack
 {
-    public class BatchAckExtension : IAckExtension, IFrameExtension
+    public class AckExtension : IAckExtension, IFrameExtension
     {
-        public BatchAckExtension()
+        public AckExtension()
         {
             MessagesPerAck = 10;
             AckExpireTime = TimeSpan.FromMilliseconds(500);
@@ -34,13 +34,6 @@ namespace SharpMessaging.Extensions.Ack
         /// </remarks>
         public TimeSpan AckExpireTime { get; set; }
 
-        /// <summary>
-        ///     Amount of messages that can be pending for a write (i.e. may not be sent yet due to previous messages have not been
-        ///     sent)
-        /// </summary>
-        public int MaxAmountOfPendingMessages { get; set; }
-
-
         public IAckReceiver CreateAckReceiver(IConnection connection, byte extensionId,
             Action<MessageFrame> deliverMessageMethod, HandshakeExtension extProperties)
         {
@@ -52,9 +45,8 @@ namespace SharpMessaging.Extensions.Ack
             if (extProperties.Properties.ContainsKey("AckExpireTime"))
                 expire = TimeSpan.FromMilliseconds(int.Parse(extProperties.Properties["AckExpireTime"]));
 
-            return new BatchAckReceiver(connection, deliverMessageMethod, MaxAmountOfPendingMessages)
+            return new AckReceiver(connection, deliverMessageMethod, MessagesPerAck)
             {
-                Threshold = msgsPerAck,
                 TimeoutBeforeResendingMessage = expire.Add(TimeSpan.FromMilliseconds(20)) //for network latency
             };
         }
@@ -69,7 +61,7 @@ namespace SharpMessaging.Extensions.Ack
             if (extProperties.Properties.ContainsKey("AckExpireTime"))
                 expire = TimeSpan.FromMilliseconds(int.Parse(extProperties.Properties["AckExpireTime"]));
 
-            return new BatchAckSender(connection, extensionId)
+            return new AckSender(connection, extensionId)
             {
                 Threshold = msgsPerAck,
                 TimeoutBeforeSendingAck = expire

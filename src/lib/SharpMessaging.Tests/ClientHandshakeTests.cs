@@ -30,7 +30,7 @@ namespace SharpMessaging.Tests
             actual.Should().Be(true);
             sut.Flags.Should().Be(0);
             sut.Identity.Should().Be("day1");
-            sut.RequiredExtensions[0].Should().Be("json");
+            sut.RequiredExtensions[0].Name.Should().Be("json");
             sut.OptionalExtensions.Should().BeEmpty();
         }
 
@@ -84,7 +84,7 @@ namespace SharpMessaging.Tests
             sut.Flags.Should().Be(0);
             sut.Identity.Should().Be("day1");
             sut.RequiredExtensions.Should().BeEmpty();
-            sut.OptionalExtensions[0].Should().Be("json");
+            sut.OptionalExtensions[0].Name.Should().Be("json");
         }
 
         [Fact]
@@ -111,8 +111,8 @@ namespace SharpMessaging.Tests
             actual.Should().Be(true);
             sut.Flags.Should().Be(0);
             sut.Identity.Should().Be("day1");
-            sut.RequiredExtensions[0].Should().Be("jso1");
-            sut.OptionalExtensions[0].Should().Be("json");
+            sut.RequiredExtensions[0].Name.Should().Be("jso1");
+            sut.OptionalExtensions[0].Name.Should().Be("json");
         }
 
         [Fact]
@@ -140,7 +140,7 @@ namespace SharpMessaging.Tests
 
             actual1.Should().Be(false);
             actual2.Should().Be(true);
-            sut.OptionalExtensions[0].Should().Be("json");
+            sut.OptionalExtensions[0].Name.Should().Be("json");
         }
 
         [Fact]
@@ -167,7 +167,7 @@ namespace SharpMessaging.Tests
             sut.Read(buffer, ref offset, ref count1);
             sut.Read(buffer, ref breakPoint, ref count2);
 
-            sut.OptionalExtensions[0].Should().Be("json");
+            sut.OptionalExtensions[0].Name.Should().Be("json");
         }
 
         [Fact]
@@ -194,7 +194,7 @@ namespace SharpMessaging.Tests
             sut.Read(buffer, ref offset, ref count1);
             sut.Read(buffer, ref breakPoint, ref count2);
 
-            sut.OptionalExtensions[0].Should().Be("json");
+            sut.OptionalExtensions[0].Name.Should().Be("json");
         }
 
         [Fact]
@@ -221,7 +221,7 @@ namespace SharpMessaging.Tests
             sut.Read(buffer, ref offset, ref count1);
             sut.Read(buffer, ref breakPoint, ref count2);
 
-            sut.OptionalExtensions[0].Should().Be("json");
+            sut.OptionalExtensions[0].Name.Should().Be("json");
         }
 
         [Fact]
@@ -248,7 +248,7 @@ namespace SharpMessaging.Tests
             sut.Read(buffer, ref offset, ref count1);
             sut.Read(buffer, ref breakPoint, ref count2);
 
-            sut.OptionalExtensions[0].Should().Be("json");
+            sut.OptionalExtensions[0].Name.Should().Be("json");
         }
 
         [Fact]
@@ -275,7 +275,7 @@ namespace SharpMessaging.Tests
             sut.Read(buffer, ref offset, ref count1);
             sut.Read(buffer, ref breakPoint, ref count2);
 
-            sut.OptionalExtensions[0].Should().Be("json");
+            sut.OptionalExtensions[0].Name.Should().Be("json");
         }
 
         [Fact]
@@ -302,7 +302,7 @@ namespace SharpMessaging.Tests
             sut.Read(buffer, ref offset, ref count1);
             sut.Read(buffer, ref breakPoint, ref count2);
 
-            sut.OptionalExtensions[0].Should().Be("json");
+            sut.OptionalExtensions[0].Name.Should().Be("json");
         }
     }
 }

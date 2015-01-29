@@ -22,12 +22,12 @@ namespace SharpMessaging.BenchmarkApp
         public void Start(int port)
         {
             var registry = new ExtensionRegistry();
-            registry.AddOptionalExtension(new BatchAckExtension()
+            registry.AddOptionalExtension(new AckExtension()
             {
                 MessagesPerAck = MessagesPerAck,
                 AckExpireTime = TimeSpan.FromSeconds(1)
             });
-            registry.AddOptionalExtension(new SingleAckExtension());
+            registry.AddOptionalExtension(new AckExtension());
             registry.AddOptionalExtension(new DotNetTypeExtension());
             registry.AddOptionalExtension(new FastJsonExtension());
             _server = new SharpMessagingServer(registry);

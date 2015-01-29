@@ -30,16 +30,11 @@ namespace SharpMessaging.BenchmarkApp
         {
             var registry = new ExtensionRegistry();
             //registry.AddRequiredExtension(new JsonExtension());
-            if (MessagesPerAck == 1)
+            if (MessagesPerAck != 0)
             {
-                registry.AddRequiredExtension(new SingleAckExtension());
-            }
-            else if (MessagesPerAck != 0)
-            {
-                registry.AddRequiredExtension(new BatchAckExtension
+                registry.AddRequiredExtension(new AckExtension
                 {
                     MessagesPerAck = MessagesPerAck,
-                    MaxAmountOfPendingMessages = 1000000,
                     AckExpireTime = TimeSpan.FromSeconds(120) // as we queue up msgs a lot faster than they can be sent.
                 });
             }

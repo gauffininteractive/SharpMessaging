@@ -24,7 +24,8 @@ namespace SharpMessaging.Persistence
         /// </summary>
         /// <param name="messages">Will be cleared and then filled with all available buffers</param>
         /// <param name="maxNumberOfMessages">Number of wanted records (will return less if less are available)</param>
-        void Dequeue(List<byte[]> messages, int maxNumberOfMessages);
+        /// <returns>Amount of items that was dequeued.</returns>
+        int Dequeue(List<byte[]> messages, int maxNumberOfMessages);
 
         /// <summary>
         ///     Open file and move to the correct position (with the help of the position file)

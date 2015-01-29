@@ -14,10 +14,10 @@ namespace SharpMessaging.Tests.Extensions.Ack
         public void do_not_send_an_ack_For_the_first_message()
         {
             var connection = Substitute.For<IConnection>();
-            
-            var sut = new BatchAckSender(connection, 1){Threshold = 10, TimeoutBeforeSendingAck = TimeSpan.FromDays(1)};
-            sut.AddFrame(new MessageFrame {SequenceNumber = 1});
-            
+
+            var sut = new AckSender(connection, 1) { Threshold = 10, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
+            sut.AckFrame(new MessageFrame { SequenceNumber = 1 });
+
             connection.DidNotReceiveWithAnyArgs().Send(null);
         }
 
@@ -26,9 +26,9 @@ namespace SharpMessaging.Tests.Extensions.Ack
         {
             var connection = Substitute.For<IConnection>();
 
-            var sut = new BatchAckSender(connection, 1) { Threshold = 2, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
-            sut.AddFrame(new MessageFrame { SequenceNumber = 1 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 21 });
+            var sut = new AckSender(connection, 1) { Threshold = 2, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
+            sut.AckFrame(new MessageFrame { SequenceNumber = 1 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 21 });
 
             connection.ReceivedWithAnyArgs().Send(null);
         }
@@ -39,9 +39,9 @@ namespace SharpMessaging.Tests.Extensions.Ack
         {
             var connection = Substitute.For<IConnection>();
 
-            var sut = new BatchAckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65535 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 1 });
+            var sut = new AckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65535 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 1 });
 
             connection.DidNotReceiveWithAnyArgs().Send(null);
         }
@@ -52,10 +52,10 @@ namespace SharpMessaging.Tests.Extensions.Ack
         {
             var connection = Substitute.For<IConnection>();
 
-            var sut = new BatchAckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65535 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 1 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 2 });
+            var sut = new AckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65535 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 1 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 2 });
 
             connection.ReceivedWithAnyArgs().Send(null);
         }
@@ -65,13 +65,13 @@ namespace SharpMessaging.Tests.Extensions.Ack
         {
             var connection = Substitute.For<IConnection>();
 
-            var sut = new BatchAckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65533 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65534 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65535 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 1 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 2 });
-            var actual = sut.ShouldReAck(new MessageFrame{SequenceNumber = 65534});
+            var sut = new AckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65533 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65534 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65535 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 1 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 2 });
+            var actual = sut.ShouldReAck(new MessageFrame { SequenceNumber = 65534 });
 
             actual.Should().BeTrue();
         }
@@ -87,12 +87,12 @@ namespace SharpMessaging.Tests.Extensions.Ack
         {
             var connection = Substitute.For<IConnection>();
 
-            var sut = new BatchAckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65533 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65534 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65535 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 1 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 2 });
+            var sut = new AckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65533 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65534 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65535 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 1 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 2 });
             var actual = sut.ShouldReAck(new MessageFrame { SequenceNumber = 3 });
 
             actual.Should().BeFalse();
@@ -103,12 +103,12 @@ namespace SharpMessaging.Tests.Extensions.Ack
         {
             var connection = Substitute.For<IConnection>();
 
-            var sut = new BatchAckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65531 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65532 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65533 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65534 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65535 });
+            var sut = new AckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65531 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65532 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65533 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65534 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65535 });
             var actual = sut.ShouldReAck(new MessageFrame { SequenceNumber = 1 });
 
             actual.Should().BeFalse();
@@ -119,13 +119,13 @@ namespace SharpMessaging.Tests.Extensions.Ack
         {
             var connection = Substitute.For<IConnection>();
 
-            var sut = new BatchAckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65530 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65531 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65532 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65533 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65534 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65535 });
+            var sut = new AckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65530 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65531 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65532 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65533 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65534 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65535 });
             var actual = sut.ShouldReAck(new MessageFrame { SequenceNumber = 1 });
 
             actual.Should().BeFalse();
@@ -136,9 +136,9 @@ namespace SharpMessaging.Tests.Extensions.Ack
         {
             var connection = Substitute.For<IConnection>();
 
-            var sut = new BatchAckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65533 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65534 });
+            var sut = new AckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65533 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65534 });
             var actual = sut.ShouldReAck(new MessageFrame { SequenceNumber = 65535 });
 
             actual.Should().BeFalse();
@@ -150,9 +150,9 @@ namespace SharpMessaging.Tests.Extensions.Ack
         {
             var connection = Substitute.For<IConnection>();
 
-            var sut = new BatchAckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65533 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 65534 });
+            var sut = new AckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65533 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 65534 });
             var actual = sut.ShouldReAck(new MessageFrame { SequenceNumber = 2 });
 
             actual.Should().BeFalse();
@@ -163,9 +163,9 @@ namespace SharpMessaging.Tests.Extensions.Ack
         {
             var connection = Substitute.For<IConnection>();
 
-            var sut = new BatchAckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
-            sut.AddFrame(new MessageFrame { SequenceNumber = 1 });
-            sut.AddFrame(new MessageFrame { SequenceNumber = 2 });
+            var sut = new AckSender(connection, 1) { Threshold = 3, TimeoutBeforeSendingAck = TimeSpan.FromDays(1) };
+            sut.AckFrame(new MessageFrame { SequenceNumber = 1 });
+            sut.AckFrame(new MessageFrame { SequenceNumber = 2 });
             var actual = sut.ShouldReAck(new MessageFrame { SequenceNumber = 200 });
 
             actual.Should().BeFalse();

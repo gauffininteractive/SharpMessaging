@@ -12,127 +12,86 @@ namespace SharpMessaging.Extensions.Ack
     /// <summary>
     ///     Resends messages that have not been acked.
     /// </summary>
-    public class BatchAckReceiver : IAckReceiver, IDisposable
+    public class AckReceiver : IAckReceiver, IDisposable
     {
-        private static readonly List<ushort> _receivedMessages = new List<ushort>(1000000);
         private readonly IConnection _connection;
         private readonly Action<MessageFrame> _deliverMessageMethod;
+        private readonly int _messagesPerAck;
         private readonly CircularQueueList<FrameWrapper> _framesToAck;
-        private readonly int _maxAmountOfPendingMessages;
         private readonly Timer _timer;
         private bool _isFirstAck;
         private int _lastSeq;
         private FileStream _logStream;
-        private int _sendCounter = 0;
 
-        public BatchAckReceiver(IConnection connection, Action<MessageFrame> deliverMessageMethod,
-            int maxAmountOfPendingMessages)
+        public AckReceiver(IConnection connection, Action<MessageFrame> deliverMessageMethod,
+            int messagesPerAck)
         {
-            if (maxAmountOfPendingMessages == 0)
-            {
-                maxAmountOfPendingMessages = 1000;
-                _framesToAck = new CircularQueueList<FrameWrapper>(maxAmountOfPendingMessages);
-            }
-            else
-                _framesToAck = new CircularQueueList<FrameWrapper>(maxAmountOfPendingMessages);
+            if (connection == null) throw new ArgumentNullException("connection");
+            if (deliverMessageMethod == null) throw new ArgumentNullException("deliverMessageMethod");
+            if (messagesPerAck <= 0)
+                throw new ArgumentOutOfRangeException("messagesPerAck", messagesPerAck, "Must be a positive number");
 
-            if (maxAmountOfPendingMessages > 100)
-                Threshold = maxAmountOfPendingMessages/10;
-            else
-                Threshold = 10;
-
+            _framesToAck = new CircularQueueList<FrameWrapper>(messagesPerAck);
             _connection = connection;
             _deliverMessageMethod = deliverMessageMethod;
-            _maxAmountOfPendingMessages = maxAmountOfPendingMessages;
+            _messagesPerAck = messagesPerAck;
             _timer = new Timer(ResendMessages, null, 50, 50);
 
             TimeoutBeforeResendingMessage = TimeSpan.FromSeconds(10);
         }
 
         public TimeSpan TimeoutBeforeResendingMessage { get; set; }
-        public int Threshold { get; set; }
 
 
-        public void AddFrame(MessageFrame frame)
+        public void Send(MessageFrame frame)
         {
-            if (_framesToAck.Count >= _maxAmountOfPendingMessages)
+            if (_framesToAck.Count >= _messagesPerAck)
                 throw new AckException(string.Format("There are already {0} awaiting an ACK. HOLD ON!",
                     _framesToAck.Count));
 
-            _receivedMessages.Add(frame.SequenceNumber);
-            if (frame.SequenceNumber < _lastSeq)
-                LogMessage("ERROR: " + frame.SequenceNumber + ", last: " + _lastSeq);
             _lastSeq = frame.SequenceNumber;
-
-
-            lock (_framesToAck)
-            {
-                //less since we should include this message in the count
-                if (_framesToAck.Count < Threshold)
-                {
-                    _sendCounter++;
-                    _framesToAck.Enqueue(new FrameWrapper(frame));
-                    _deliverMessageMethod(frame);
-                }
-                else
-                {
-                    _framesToAck.Enqueue(new FrameWrapper(frame));
-                }
-            }
+            _framesToAck.Enqueue(new FrameWrapper(frame));
+            _deliverMessageMethod(frame);
         }
+
+        public int FreeSlots { get { return _messagesPerAck - _framesToAck.Count; }}
 
         public bool CanSend(MessageFrame frame)
         {
-            return _framesToAck.Count < Threshold;
+            return _framesToAck.Count < _messagesPerAck;
         }
 
-        public void Confirm(AckFrame ackFrame)
+        public int Confirm(AckFrame ackFrame)
         {
+            int frameCount = 0;
             var sequenceNumber = ackFrame.SequenceNumber;
             lock (_framesToAck)
             {
                 while (_framesToAck.Count > 0)
                 {
                     var item = _framesToAck.Dequeue();
+                    ++frameCount;
                     if (item.Frame.SequenceNumber == sequenceNumber)
                         break;
                 }
 
-                var msgsToAck = Math.Min(Threshold, _framesToAck.Count);
+                var msgsToAck = Math.Min(_messagesPerAck, _framesToAck.Count);
                 if (msgsToAck == 0)
-                    return;
+                    return frameCount;
 
                 for (var i = 0; i < msgsToAck; i++)
                 {
-                    _sendCounter++;
                     _framesToAck[i].MarkAsSent();
                     _deliverMessageMethod(_framesToAck[i].Frame);
                 }
             }
+
+            return frameCount;
         }
 
         public void Dispose()
         {
             _timer.Dispose();
-        }
-
-        private void LogMessage(string msg)
-        {
-            return;
-            var logname = @"C:\temp\ackReceiver.log";
-            if (_logStream == null)
-            {
-                if (File.Exists(logname))
-                    File.Delete(logname);
-
-                _logStream = new FileStream(logname, FileMode.CreateNew, FileAccess.Write, FileShare.Read, 8192,
-                    FileOptions.SequentialScan);
-            }
-
-            var buf =
-                Encoding.ASCII.GetBytes(DateTime.UtcNow.ToString("HH:mm:ss.fff") + " " + msg + "\r\n");
-            _logStream.Write(buf, 0, buf.Length);
-            _logStream.Flush();
         }
 
         private void ResendMessages(object state)
