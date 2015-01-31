@@ -52,15 +52,16 @@
   <ItemGroup>
     <Compile Include="Connection\ByteBufferWriterTests.cs" />
     <Compile Include="Connection\CircularListQueueTests.cs" />
-    <Compile Include="ClientHandshakeTests.cs" />
+    <Compile Include="Frames\ClientHandshakeTests.cs" />
     <Compile Include="Connection\BufferManagerTests.cs" />
     <Compile Include="Connection\ClientServerHelper.cs" />
     <Compile Include="Connection\ConnectionTests.cs" />
     <Compile Include="Connection\SocketHelper.cs" />
     <Compile Include="Extensions\Ack\BatchAckReceiverTests.cs" />
     <Compile Include="Extensions\Ack\BatchAckSenderTests.cs" />
-    <Compile Include="HandshakeFrameTests.cs" />
-    <Compile Include="MessageFrameTests.cs" />
+    <Compile Include="Frames\ExtensionFrame.cs" />
+    <Compile Include="Frames\HandshakeFrameTests.cs" />
+    <Compile Include="Frames\MessageFrameTests.cs" />
     <Compile Include="Persistence\MeassuredIntegrationTest.cs" />
     <Compile Include="Persistence\PersistantQueueIntegrationTests.cs" />
     <Compile Include="Persistence\PersistantQueueTests.cs" />

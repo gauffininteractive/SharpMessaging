@@ -50,6 +50,7 @@
     <Compile Include="Connection\DisconnectedEventArgs.cs" />
     <Compile Include="Connection\FaultExceptionEventArgs.cs" />
     <Compile Include="Connection\HandshakeFrameReceivedEventArgs.cs" />
+    <Compile Include="Connection\RemoteEndPointException.cs" />
     <Compile Include="Connection\ServerState.cs" />
     <Compile Include="Extensions\Ack\IAckReceiver.cs" />
     <Compile Include="Extensions\Ack\IAckSender.cs" />

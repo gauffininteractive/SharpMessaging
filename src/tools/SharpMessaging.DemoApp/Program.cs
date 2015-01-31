@@ -14,13 +14,13 @@ namespace SharpMessaging.DemoApp
         private static void Main(string[] args)
         {
             var registry = new ExtensionRegistry();
-            registry.AddRequiredExtension(new AckExtension()
+            registry.AddOptionalExtension(new AckExtension()
             {
                 MessagesPerAck = 200,
                 AckExpireTime = TimeSpan.FromSeconds(1)
             });
             registry.AddOptionalExtension(new DotNetTypeExtension());
-            registry.AddRequiredExtension(new FastJsonExtension());
+            registry.AddOptionalExtension(new FastJsonExtension());
             var server = new SharpMessagingServer(registry);
             server.FrameReceived = OnFrame;
             server.Start(8334);
@@ -38,10 +38,10 @@ namespace SharpMessaging.DemoApp
                 MessagesPerAck = 10,
                 AckExpireTime = TimeSpan.FromSeconds(1)
             });
-            registry.AddRequiredExtension(new FastJsonExtension());
-            var client = new SharpMessagingClient();
+            //registry.AddRequiredExtension(new FastJsonExtension());
+            var client = new SharpMessagingClient("MyClient", registry);
             client.Start("localhost", 8334);
-            client.Send(new MessageFrame(Encoding.ASCII.GetBytes("hello")));
+            client.Send(new MessageFrame("Hello"));
             Console.WriteLine("Sent!");
             Console.ReadLine();
         }

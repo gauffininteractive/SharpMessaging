@@ -25,6 +25,11 @@ namespace SharpMessaging.Frames
 
         IFrameExtension Get(byte extensionIdentifier);
 
+        /// <summary>
+        /// Find extension
+        /// </summary>
+        /// <param name="names"></param>
+        /// <returns>Extension id if found (1-based index); otherwise 0.</returns>
         byte FindFirstExtensionId(params string[] names);
 
         /// <summary>

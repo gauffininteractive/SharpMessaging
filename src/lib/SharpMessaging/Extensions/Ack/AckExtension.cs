@@ -71,7 +71,7 @@ namespace SharpMessaging.Extensions.Ack
 
         public string Name
         {
-            get { return "batch-ack"; }
+            get { return "ack"; }
         }
 
         public IFrame CreateFrame(byte extensionId, object sequenceNumber)

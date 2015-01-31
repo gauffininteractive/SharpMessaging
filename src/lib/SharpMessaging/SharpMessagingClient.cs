@@ -25,12 +25,13 @@ namespace SharpMessaging
         private byte _ackExtensionId;
         private IAckReceiver _ackReceiver;
         private IAckSender _ackSender;
-        private Type _payloadDotNetType;
+        private Type _inboundDotNetType;
         private IPayloadSerializer _payloadSerializer;
         private ushort _sequenceCounter = 0;
         private ClientState _state;
         private IQueueStorage _messageStore;
-
+        private DotNetTypeExtension _dotNetExtension;
+        private Type _outboundDotNetType;
 
 
         public SharpMessagingClient(string identity, IExtensionRegistry extensionRegistry)
@@ -46,6 +47,12 @@ namespace SharpMessaging
             };
             _connection.HandshakeReceived += OnServerHandshakeFrame;
             _connection.Disconnected += OnDisconnected;
+            _connection.Fault += OnConnectionFault;
+        }
+
+        private void OnConnectionFault(object sender, FaultExceptionEventArgs e)
+        {
+            Console.WriteLine(e.ErrorMessage);
         }
 
         private void OnDisconnected(object sender, DisconnectedEventArgs e)
@@ -76,13 +83,13 @@ namespace SharpMessaging
                 
             if (_payloadSerializer != null)
             {
-                if (_payloadDotNetType != null)
+                if (_inboundDotNetType != null)
                 {
                     frame.Payload = frame.IsFlaggedAsSmall
-                        ? _payloadSerializer.Deserialize(_payloadDotNetType, frame.PayloadBuffer.Array,
+                        ? _payloadSerializer.Deserialize(_inboundDotNetType, frame.PayloadBuffer.Array,
                             frame.PayloadBuffer.Offset,
                             frame.PayloadBuffer.Count)
-                        : _payloadSerializer.Deserialize(_payloadDotNetType, frame.PayloadStream);
+                        : _payloadSerializer.Deserialize(_inboundDotNetType, frame.PayloadStream);
                 }
                 else
                 {
@@ -116,11 +123,6 @@ namespace SharpMessaging
             //if (!_authenticationEvent.WaitOne(100000))
             //    throw new InvalidOperationException("Handshake was not completed in a reasonable time.");
 
-
-            frame.SequenceNumber = ++_sequenceCounter;
-            if (_sequenceCounter == ushort.MaxValue)
-                _sequenceCounter = 0;
-
             if (_ackReceiver != null)
             {
                 // we can allow all requests to send messages
@@ -144,16 +146,17 @@ namespace SharpMessaging
 
         private void DeliverMessage(MessageFrame frame)
         {
-            if (frame.PayloadBuffer.Count == 0)
-                Debugger.Break();
+            frame.SequenceNumber = ++_sequenceCounter;
+            if (_sequenceCounter == ushort.MaxValue)
+                _sequenceCounter = 0;
 
             if (frame.Payload != null && _payloadSerializer != null)
             {
                 _payloadSerializer.Serialize(frame);
-                if (_payloadDotNetType != frame.Payload.GetType())
+                if (_dotNetExtension != null && _outboundDotNetType != frame.Payload.GetType())
                 {
-                    _payloadDotNetType = frame.Payload.GetType();
-                    var dotNetFrame = _extensionService.CreateFrame("dotnet", _payloadDotNetType);
+                    _outboundDotNetType = frame.Payload.GetType();
+                    var dotNetFrame = _extensionService.CreateFrame("dotnet", _outboundDotNetType);
                     _connection.SendMore(dotNetFrame);
                 }
             }
@@ -170,9 +173,17 @@ namespace SharpMessaging
             _connection.SetHandshakeCompleted();
             _connection.Send(frame);
 
+            //TODO: This is a mess. Create a better way
+            // to identify and activate extensions.
+            // maybe by defining extension behavior like IInboundMessageProcessor.
 
             var id = _extensionService.FindFirstExtensionId("json", "xml", "protobuf");
-            _payloadSerializer = (((IPayloadExtension)_extensionService.Get(id))).CreatePayloadSerializer();
+            if (id > 0)
+                _payloadSerializer = (((IPayloadExtension)_extensionService.Get(id))).CreatePayloadSerializer();
+
+            id = _extensionService.FindFirstExtensionId("dotnet");
+            if (id > 0)
+                _dotNetExtension = (DotNetTypeExtension) _extensionService.Get(id);
 
             _ackExtensionId = _extensionService.FindFirstExtensionId("batch-ack", "ack");
             if (_ackExtensionId != 0)
@@ -183,6 +194,7 @@ namespace SharpMessaging
                 _ackReceiver = ackExtension.CreateAckReceiver(_connection, _ackExtensionId, DeliverMessage,
                     extProperties);
                 _ackSender = ackExtension.CreateAckSender(_connection, _ackExtensionId, extProperties);
+
             }
 
 
@@ -194,7 +206,7 @@ namespace SharpMessaging
         {
             if (frame.Payload is DotNetType)
             {
-                _payloadDotNetType = ((DotNetType) frame.Payload).CreateType();
+                _inboundDotNetType = ((DotNetType) frame.Payload).CreateType();
             }
             if (frame.ExtensionId == _ackExtensionId)
             {

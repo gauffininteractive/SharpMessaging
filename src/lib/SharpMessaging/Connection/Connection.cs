@@ -227,6 +227,14 @@ namespace SharpMessaging.Connection
             {
                 if (!_handshakeCompleted)
                 {
+                    var flags = (FrameFlags)buffer[offset];
+                    if ((flags & FrameFlags.ErrorFrame) != 0)
+                    {
+                        _frameType = FrameType.Error;
+                        _handshakeCompleted = true;
+                        continue;
+                    }
+
                     var isCompleted = _handshakeFrame.Read(buffer, ref offset, ref bytesTransferred);
                     if (!isCompleted)
                     {
@@ -271,7 +279,13 @@ namespace SharpMessaging.Connection
                         break;
 
                     case FrameType.Error:
-
+                        var isCompleted1 = _errorFrame.Read(buffer, ref offset, ref bytesTransferred);
+                        if (!isCompleted1)
+                        {
+                            Fault(this, new FaultExceptionEventArgs(_errorFrame.ErrorMessage, new RemoteEndPointException(_errorFrame.ErrorMessage)));
+                            Close();
+                        }
+                        break;
 
                     case FrameType.Extension:
                         var isCompleted2 = _extensionFrameProcessor.Read(buffer, ref offset, ref bytesTransferred);

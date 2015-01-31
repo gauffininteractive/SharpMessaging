@@ -41,6 +41,10 @@ namespace SharpMessaging.Frames
                 PayloadBuffer = (ArraySegment<byte>) payload;
             else if (payload is byte[])
                 PayloadBuffer = new ArraySegment<byte>((byte[]) payload);
+            else if (payload is string)
+            {
+                PayloadBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes((string)payload));
+            }
             else
                 Payload = payload;
 
@@ -304,6 +308,9 @@ namespace SharpMessaging.Frames
             }
             else
             {
+                if(_writeBuffer == WriterContext.EmptySegment)
+                    throw new InvalidOperationException("If no serializer is used, you have to use either PayloadStream or PayloadBuffer property.");
+                    
                 _writeBuffer.Array[offset++] = PayloadBuffer.Count > byte.MaxValue
                     ? (byte) FrameFlags.LargeFrame
                     : (byte) 0;

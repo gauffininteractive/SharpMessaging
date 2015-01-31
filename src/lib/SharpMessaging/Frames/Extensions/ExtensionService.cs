@@ -176,6 +176,8 @@ namespace SharpMessaging.Frames.Extensions
 
         public IFrameExtension Get(byte extensionIdentifier)
         {
+            if (extensionIdentifier <= 0)
+                throw new ArgumentOutOfRangeException("extensionIdentifier", extensionIdentifier, "Extensions have id:s that are 1 or larger.");
             return _chosenExtensions[extensionIdentifier - 1];
         }
 

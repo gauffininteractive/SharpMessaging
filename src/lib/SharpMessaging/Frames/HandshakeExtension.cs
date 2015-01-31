@@ -87,5 +87,10 @@ namespace SharpMessaging.Frames
 
             return Name;
         }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }
